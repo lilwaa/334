@@ -18,7 +18,7 @@ def main():
     female_df = df[df['Gender_bin'] == 1]
 
     # Split based on Occupation
-    d_col = ['Occupation_Corporate', 'Occupation_Housewife', 'Occupation_Others', 'Occupation_Student']
+    d_col = ['Occupation_Corporate', 'Occupation_Business', 'Occupation_Housewife', 'Occupation_Others', 'Occupation_Student']
     lab0, arr0_df = find_subgroups(d_col, male_df, "Male")
     lab1, arr1_df = find_subgroups(d_col, female_df, "Female")
 
