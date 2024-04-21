@@ -9,7 +9,7 @@ splitter= Splitter()
 xtrain, xtest, ytrain, ytest= splitter.get_all_subsets()
 #out put: coefficients + score dictionary
 def logregression(key_name):
-    lr= LogisticRegression()
+    lr= LogisticRegression(penalty="l1", solver= "liblinear")
     xTrain= xtrain[key_name]
     yTrain= ytrain[key_name]
     xTest= xtest[key_name]
@@ -21,7 +21,7 @@ def logregression(key_name):
     F1= metrics.f1_score(yTest, lr.predict(xTest))
     return lr.coef_, {"AUC": AUC, "AUPRC": AUPRC, "F1": F1}
 def main(): 
-    coef, score= logregression("Occupation_Student_M")
+    coef, score= logregression("Occupation_Student_F")
     print("coef:\n", coef)
     print("score:\n", score)
 
