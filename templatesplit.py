@@ -61,32 +61,3 @@ class Splitter:
         #process test datasets
         self.find_subgroups(d_col, df_test,"test")
         return self.xtrain, self.xtest, self.ytrain, self.ytest
-def main():
-    splitter = Splitter()
-    xtrain, xtest, ytrain, ytest = splitter.get_all_subsets()  # Call the method
-    print("xtrain subsets:")
-    for key, value in xtrain.items():
-        print(f"{key}:")
-        print(len(xtrain[key]))  # Print the first few rows for demonstration
-        print("------")
-
-    print("xtest subsets:")
-    for key, value in xtest.items():
-        print(f"{key}:")
-        print(len(xtest[key])) # Print the first few rows for demonstration
-        print("------")
-
-    print("ytrain subsets:")
-    for key, value in ytrain.items():
-        print(f"{key}:")
-        print(value.head())  # Print the first few rows for demonstration
-        print("------")
-
-    print("ytest subsets:")
-    for key, value in ytest.items():
-        print(f"{key}:")
-        print(value.head())  # Print the first few rows for demonstration
-        print("------")
-
-if __name__== "__main__":
-    main()
