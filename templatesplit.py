@@ -1,5 +1,5 @@
 '''
-Class Splitter will output xtrain, xtest, ytrain and ytest dictionaris with demographics-based subsets
+Class Splitter will output xtrain, xtest, ytrain and ytest ndarrays with demographics-based subsets
 ------------------------------------------------------------------------------------------------------
 How to use that:
 splitter = Splitter() #Note: you need to go to the templatesplit.py to change the target column if needed
@@ -14,7 +14,7 @@ xtrain["Occupation_Student_M"]
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import os
-
+import numpy as np
 class Splitter:
     def __init__(self, y_col="Growing_stress_bin"): #I set the default y variable as growing stress, you can change that when you want to test other possible y
         self.xtrain = {}
@@ -51,10 +51,10 @@ class Splitter:
         df = df.drop(columns=df.columns[0], axis=1)
         d_col = ['Occupation_Corporate', 'Occupation_Housewife', 'Occupation_Others', 'Occupation_Student', 'Occupation_Business']
         self.find_subgroups(d_col, df)
-        self.xtrain = combine_csv_files("xtrain")
-        self.xtest = combine_csv_files("xtest")
-        self.ytrain = combine_csv_files("ytrain")
-        self.ytest = combine_csv_files("ytest")
+        self.xtrain = combine_csv_files("xtrain", flatten=False)
+        self.xtest = combine_csv_files("xtest",flatten=False)
+        self.ytrain = combine_csv_files("ytrain", flatten=True)
+        self.ytest = combine_csv_files("ytest", flatten=True)
         return self.xtrain, self.xtest, self.ytrain, self.ytest
 
     def tt_split(self, df, label, x_or_y):
@@ -68,13 +68,16 @@ class Splitter:
             train_df.to_csv(f"ytrain/{label}.csv", index=False)
             test_df.to_csv(f"ytest/{label}.csv", index=False)
 
-def combine_csv_files(folder_path):
+def combine_csv_files(folder_path, flatten):
     data_dict = {}
     for filename in os.listdir(folder_path):
         if filename.endswith(".csv"):
             file_path = os.path.join(folder_path, filename)
             key = filename[:-4]  # Remove the ".csv" extension to use as the key
-            data_dict[key] = pd.read_csv(file_path)
+            if flatten:
+                data_dict[key]= pd.read_csv(file_path).to_numpy().flatten()
+            else:
+                data_dict[key] = pd.read_csv(file_path).to_numpy()
     return data_dict
 
 def main():
