@@ -1,51 +1,29 @@
-import argparse
-import json
 import pandas as pd
-import numpy as np
 from sklearn.linear_model import LogisticRegression
-lr= LogisticRegression()
-#get all subsets in 
-def get_subsets()
-def main():
-    def main():
-    # set up the program to take in arguments from the command line
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--xTrain",
-                        default="space_trainx.csv",
-                        help="filename for features of the training data")
-    parser.add_argument("--yTrain",
-                        default="space_trainy.csv",
-                        help="filename for labels associated with training data")
-    parser.add_argument("--xTest",
-                        default="space_testx.csv",
-                        help="filename for features of the test data")
-    parser.add_argument("--yTest",
-                        default="space_testy.csv",
-                        help="filename for labels associated with the test data")
-    parser.add_argument("rocOutput",
-                         help="csv filename for ROC curves")
-    parser.add_argument("bestParamOutput",
-                         help="json filename for best parameter")
-    args = parser.parse_args()
-    # load the train and test data
-    xTrain = pd.read_csv(args.xTrain).to_numpy()
-    yTrain = pd.read_csv(args.yTrain).to_numpy().flatten()
-    xTest = pd.read_csv(args.xTest).to_numpy()
-    yTest = pd.read_csv(args.yTest).to_numpy().flatten()
+from sklearn import metrics
+from templatesplit import Splitter
 
-    # preprocess the data
+splitter = Splitter()
+xtrain, xtest, ytrain, ytest = splitter.get_all_subsets()
 
-    perfDict = {}
-    rocDF = pd.DataFrame()
-    bestParamDict = {}
+def logregression(key_name):
+    lr = LogisticRegression()
+    xTrain = xtrain[key_name].to_numpy().reshape(-1, 1)
+    yTrain = ytrain[key_name].to_numpy().ravel()
+    xTest = xtest[key_name].to_numpy().reshape(-1, 1)
+    yTest = ytest[key_name].to_numpy().ravel()
+    lr.fit(xTrain, yTrain)
+    y_proba = lr.predict_proba(xTest)[:, 1]
+    AUC = metrics.roc_auc_score(y_true=yTest, y_score=y_proba)
+    precision, recall, thresholds = metrics.precision_recall_curve(yTest, y_proba)
+    AUPRC = metrics.auc(recall, precision)
+    F1 = metrics.f1_score(yTest, lr.predict(xTest))
+    return lr.coef_, {"AUC": AUC, "AUPRC": AUPRC, "F1": F1}
 
-   
-    # save roc curves to data
-    rocDF.to_csv(args.rocOutput, index=False)
-    # store the best parameters
-    with open(args.bestParamOutput, 'w') as f:
-        json.dump(bestParamDict, f)
-
+def main(): 
+    coef, score = logregression("Occupation_Student_M")
+    print("coef:\n", coef)
+    print("score:\n", score)
 
 if __name__ == "__main__":
     main()
