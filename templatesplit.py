@@ -22,7 +22,9 @@ def main():
     lab0, arr0_df = find_subgroups(d_col, male_df, "Male")
     lab1, arr1_df = find_subgroups(d_col, female_df, "Female")
 
-    print(lab0)
-    print(arr0_df)
-    print(lab1)
-    print(arr1_df)
+    # Sizes of Subgroups
+    print("---------------------------------------Sizes of subgroups--------------------------------------")
+
+    for label, arr in zip(lab0, arr0_df):
+        print(label)
+        print(arr.shape)
