@@ -19,11 +19,13 @@ def logregression(key_name):
     precision, recall, thresholds = metrics.precision_recall_curve(yTest, lr.predict_proba(xTest)[:, 1])
     AUPRC= metrics.auc(recall, precision)
     F1= metrics.f1_score(yTest, lr.predict(xTest))
-    return lr.coef_, {"AUC": AUC, "AUPRC": AUPRC, "F1": F1}
+    fpr, tpr, thr = metrics.roc_curve(yTest, y_score=lr.predict_proba(xTest)[:, 1])
+    return lr.coef_, {"AUC": AUC, "AUPRC": AUPRC, "F1": F1}, {"fpr": fpr, "tpr":tpr}
 def main(): 
-    coef, score= logregression("Occupation_Student_F")
+    coef, score, fpr_tpr= logregression("Occupation_Student_F")
     print("coef:\n", coef)
     print("score:\n", score)
+    print("fpr & tpr:\n", fpr_tpr)
 
 if __name__ == "__main__":
     main()

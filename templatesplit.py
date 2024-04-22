@@ -1,7 +1,7 @@
 '''
 Class Splitter will output xtrain, xtest, ytrain and ytest ndarrays with demographics-based subsets
 ------------------------------------------------------------------------------------------------------
-How to use that:
+How to use Splitter:
 splitter = Splitter() #Note: you need to go to the templatesplit.py to change the target column if needed
 xtrain, xtest, ytrain, ytest = splitter.get_all_subsets()
 
@@ -27,20 +27,20 @@ class Splitter:
         for c in dcol.copy():  # Avoid modifying the original list
             #Extract all rows with c occupation
             df_tmp = df[df[c] == 1]
-            #drop all occupation-related columns
+            #Drop all occupation-related columns
             df_tmp= df_tmp.drop(columns= dcol)
-            #split genders
+            #Split genders
             df_f = df_tmp[df_tmp["Gender_bin"] == 1]
             df_m = df_tmp[df_tmp["Gender_bin"] == 0]
-            #drop gender column
+            #Drop gender column
             df_f= df_f.drop(columns = "Gender_bin")
             df_m= df_m.drop(columns = "Gender_bin")
-            #process the female subgroup
+            #Process the female subgroup
             df_x_f, df_y_f = self.x_y_split(df_f)
             label_f = f"{c}_F"
             self.tt_split(df_x_f, label_f, "x")
             self.tt_split(df_y_f, label_f, "y")
-            #process the male subgroup
+            #Process the male subgroup
             df_x_m, df_y_m = self.x_y_split(df_m)
             label_m = f"{c}_M"
             self.tt_split(df_x_m, label_m, "x")
