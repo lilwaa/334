@@ -22,10 +22,10 @@ def logregression(key_name):
     fpr, tpr, thr = metrics.roc_curve(yTest, y_score=lr.predict_proba(xTest)[:, 1])
     return lr.coef_, {"AUC": AUC, "AUPRC": AUPRC, "F1": F1}, {"fpr": fpr, "tpr":tpr}
 def main(): 
-    coef, score, fpr_tpr= logregression("Occupation_Student_F")
+    coef, score, fpr_tpr= logregression("Occupation_Student_M")
     print("coef:\n", coef)
     print("score:\n", score)
-    print("fpr & tpr:\n", fpr_tpr)
+    #print("fpr & tpr:\n", fpr_tpr)
 
 if __name__ == "__main__":
     main()

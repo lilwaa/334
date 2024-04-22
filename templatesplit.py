@@ -38,13 +38,11 @@ class Splitter:
             #Process the female subgroup
             df_x_f, df_y_f = self.x_y_split(df_f)
             label_f = f"{c}_F"
-            self.tt_split(df_x_f, label_f, "x")
-            self.tt_split(df_y_f, label_f, "y")
+            self.tt_split(label_f, df_x_f, df_y_f)
             #Process the male subgroup
             df_x_m, df_y_m = self.x_y_split(df_m)
             label_m = f"{c}_M"
-            self.tt_split(df_x_m, label_m, "x")
-            self.tt_split(df_y_m, label_m, "y")
+            self.tt_split(label_m, df_x_m, df_y_m)
 
     def x_y_split(self, df):
         df_y = df[self.y_col]
@@ -62,16 +60,12 @@ class Splitter:
         self.ytest = combine_csv_files("ytest", flatten=True)
         return self.xtrain, self.xtest, self.ytrain, self.ytest
 
-    def tt_split(self, df, label, x_or_y):
-        train_index, test_index = train_test_split(df.index)
-        train_df = df.loc[train_index]
-        test_df = df.loc[test_index]
-        if x_or_y == "x":
-            train_df.to_csv(f"xtrain/{label}.csv", index=False)
-            test_df.to_csv(f"xtest/{label}.csv", index=False)
-        else:
-            train_df.to_csv(f"ytrain/{label}.csv", index=False)
-            test_df.to_csv(f"ytest/{label}.csv", index=False)
+    def tt_split(self,label, df_x, df_y):
+        xtrain, xtest, ytrain, ytest = train_test_split(df_x, df_y, stratify=df_y, random_state= 100)
+        xtrain.to_csv(f"xtrain/{label}.csv", index=False)
+        xtest.to_csv(f"xtest/{label}.csv", index=False)
+        ytrain.to_csv(f"ytrain/{label}.csv", index=False)
+        ytest.to_csv(f"ytest/{label}.csv", index=False)
 
 def combine_csv_files(folder_path, flatten):
     data_dict = {}
