@@ -50,8 +50,9 @@ class Splitter:
         return df_x, df_y
 
     def get_all_subsets(self):
-        df = pd.read_csv("clean-data/4-16-firstclean.csv")
-        df = df.drop(columns=df.columns[0], axis=1)
+        df = pd.read_csv("clean-data_try.csv")
+        #add the following line if you are usin the most original datasets
+        #df = df.drop(columns=df.columns[0], axis=1)
         d_col = ['Occupation_Corporate', 'Occupation_Housewife', 'Occupation_Others', 'Occupation_Student', 'Occupation_Business']
         self.find_subgroups(d_col, df)
         self.xtrain = combine_csv_files("xtrain", flatten=False)

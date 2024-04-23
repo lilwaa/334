@@ -4,9 +4,10 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn import metrics
-from templatesplit import Splitter
+from split_test import Splitter
 splitter= Splitter()
 xtrain, xtest, ytrain, ytest= splitter.get_all_subsets()
+coef_dic= {}
 def logregression(key_name):
     # Define logistic regression model
     lr = LogisticRegression(solver="liblinear")
@@ -41,8 +42,15 @@ def main():
         print("-----------------------------------------------------")
         print(subgroup)
         coef, score= logregression(subgroup)
+        coef_dic[subgroup]=coef[0]
         print("coef:\n", coef)
         print("score:\n", score)
 
+    column_names = pd.read_csv("var/xtrain/Occupation_Others_F.csv").columns
+    coef_df = pd.DataFrame(coef_dic, index=column_names)
+    coef_df = coef_df.transpose()
+    coef_df.to_csv("lr_coeff_var.csv", index=False)
+    
+    
 if __name__ == "__main__":
     main()
