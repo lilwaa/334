@@ -37,9 +37,12 @@ def logregression(key_name):
 
 # Example usage
 def main(): 
-    coef, score = logregression("Occupation_Student_F")
-    print("Coefficients:\n", coef)
-    print("Scores:\n", score)
+    for subgroup in xtrain.keys():
+        print("-----------------------------------------------------")
+        print(subgroup)
+        coef, score= logregression(subgroup)
+        print("coef:\n", coef)
+        print("score:\n", score)
 
 if __name__ == "__main__":
     main()
