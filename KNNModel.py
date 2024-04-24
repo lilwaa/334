@@ -1,14 +1,12 @@
 import pandas as pd 
 import numpy as np 
 import shap
-from sklearn import metrics
 from templatesplit import Splitter
 import matplotlib.pyplot as plt
-from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_recall_curve, auc, roc_curve
-
-def train_NN(params, xTrain, yTrain):
+from sklearn.neighbors import KNeighborsClassifier as KNN
+def train_KNN(params, xTrain, yTrain):
     """
         Train the NN using the data.
 
@@ -26,10 +24,10 @@ def train_NN(params, xTrain, yTrain):
         model : object
             Keys represent the epochs and values the number of mistakes
     """
-    model = MLPClassifier(alpha=params["alpha"], solver=params["solver"], hidden_layer_sizes=(23,23))
+    model = KNN()
     model = model.fit(X=xTrain.to_numpy(), y=yTrain.to_numpy().flatten())
     return model
-def predict_NN(model, xTest, yTest):
+def predict_KNN(model, xTest, yTest):
     """
         Predict the data using the given NN model.
 
@@ -58,36 +56,19 @@ def predict_NN(model, xTest, yTest):
     """
     yHat = model.predict(xTest.to_numpy())
     yTest = yTest.to_numpy().flatten()
+    predProbTest= model.predict_proba(xTest)[:,1]
     
-    y_score= model.predict_proba(xTest)
-    #auprc
-    AUC = metrics.roc_auc_score(y_true=yTest, y_score=y_score, multi_class="ovr", average="macro")
-    #auc
-    #TODO: figure out where "classes" comes from
-    classes = [0, 1, 2]
-    auprc_scores = []
-    for i, label in enumerate(classes):
-            # Treat each class as binary (1 if class i, 0 otherwise)
-            y_binary = (yTest == label).astype(int)
-            precision, recall, _ = metrics.precision_recall_curve(y_binary, y_score[:, i])
-            auprc = metrics.auc(recall, precision)
-            auprc_scores.append(auprc)
-    AUPRC = np.mean(auprc_scores)
-    #-----------------------------------------------------------------------------------------
-    #f1
-    F1 = metrics.f1_score(yTest, model.predict(xTest), average= "macro")
-    """ AUC = roc_auc_score(yTest, predProbTest)
+    AUC = roc_auc_score(yTest, predProbTest)
 
     testPrecision, testRecall, testThreshold = precision_recall_curve(yTest, predProbTest)
     AUPRC = auc(testRecall, testPrecision)
 
     F1 = f1_score(y_pred=yHat, y_true=yTest)
-    """
-    #fpr, tpr, thresholds = roc_curve(y_true=yTest, y_score=y_score)
-    
+
+    #fpr, tpr, thresholds = roc_curve(y_true=yTest, y_score=predProbTest)
     acc = accuracy_score(y_true=yTest, y_pred=yHat)
     
-    return yHat, {"Accuracy" : acc, "AUC": AUC, "AUPRC": AUPRC, "F1": F1}
+    return yHat, {"Accuracy" : acc, "AUC": AUC, "AUPRC": AUPRC, "F1": F1}#, {"fpr": fpr, "tpr": tpr}
 
 
 def eval_gridsearch(xTrain, yTrain):
@@ -116,21 +97,19 @@ def eval_gridsearch(xTrain, yTrain):
         A Python dictionary with the best parameters chosen by the
         GridSearch. 
     """
-    pgrid = {"solver": ['lbfgs', 'adam'], "alpha": [0.00001, 0.0001]}
-    clf = MLPClassifier()
+    pgrid = {"n_neighbors": [5, 20, 50], "weights": ['uniform', 'distance'] }
+    clf = KNN()
     xTrain = xTrain.to_numpy()
     yTrain = yTrain.to_numpy().flatten()
     clf.fit(X=xTrain, y=yTrain)
-    gscv = GridSearchCV(estimator=clf, cv=5, param_grid=pgrid, scoring='f1_macro')
-
-    
+    gscv = GridSearchCV(estimator=clf, param_grid=pgrid)
     gscv = gscv.fit(X=xTrain, y=yTrain)
     return gscv.best_params_
 
 def plotting(xTrain, model, xTest):
-    xt = shap.sample(xTrain, 300)
+    xt = shap.sample(xTrain, 100)
     explainer = shap.KernelExplainer(model.predict,xt)
-    shap_values = explainer.shap_values(xTest,nsamples=150)
+    shap_values = explainer.shap_values(xTest,nsamples=100)
     shap.summary_plot(shap_values,xTest,feature_names=xTest.columns)
 
 def main():
@@ -143,7 +122,7 @@ def main():
     
     predictions = [0] * len(occGen)
     metricsDict = [0]*  len(occGen)
-    
+    roc = [0]*  len(occGen)
     models = [0]*  len(occGen)
 
     for i in range( len(occGen)): 
@@ -154,18 +133,17 @@ def main():
 
         bp = eval_gridsearch(xTrain, yTrain)
 
-        model = train_NN(bp, xTrain, yTrain)
+        model = KNN()
+        model = train_KNN(bp, xTrain, yTrain)
         models[i] = model
-
+    
         xTest = xtest[name]
         yTest = ytest[name]
 
         print(type(xTrain))
-        predictions[i], metricsDict[i] = predict_NN(model, xTest, yTest)
+        predictions[i], metricsDict[i] = predict_KNN(model, xTest, yTest)
         print (metricsDict[i])
-        print(model.get_params)
-        #if i == 0:
-            #plotting(model=models[1], xTest=xTest,xTrain=xTrain)
+        
         
 if __name__ == "__main__":
     main()
