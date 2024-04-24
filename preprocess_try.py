@@ -19,13 +19,13 @@ df['Gender_bin'] = (df['Gender']=='Female').astype(int)
 df['self_employed_bin'] = (df['self_employed']=='Yes').astype(int)
 df['family_history_bin'] = np.where(df['family_history'] == 'Yes', 1, 0)
 df['treatment_bin'] = np.where(df['treatment'] == 'Yes', 1, 0)
-df['Growing_stress_bin'] = df["Growing_Stress"]
-df["Growing_stress_bin"].replace(["Yes", "Maybe"], 1, inplace= True)
-df["Growing_stress_bin"].replace( "No", 0, inplace= True)
+df["Growing_Stress"].replace("Yes", 2, inplace= True)
+df["Growing_Stress"].replace( "No", 0, inplace= True)
+df["Growing_Stress"].replace( "Maybe", 1, inplace= True)
 df['Coping_struggles_bin'] = np.where(df['Coping_Struggles'] == 'Yes', 1, 0)
 
 
-df.drop(['Gender', "self_employed", "family_history", "treatment", "Growing_Stress", "Coping_Struggles"], axis=1, inplace=True)
+df.drop(['Gender', "self_employed", "family_history", "treatment", "Coping_Struggles"], axis=1, inplace=True)
 
 # One hot encode the other columns
 def onehot(inputdf, colname):

@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 import os
 import numpy as np
 class Splitter:
-    def __init__(self, y_col="Growing_stress_bin"): #I set the default y variable as growing stress, you can change that when you want to test other possible y
+    def __init__(self, y_col="Growing_Stress"): #I set the default y variable as growing stress, you can change that when you want to test other possible y
         self.xtrain = {}
         self.xtest = {}
         self.ytrain = {}
