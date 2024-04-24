@@ -41,9 +41,10 @@ def logregression(key_name):
     '''
     #prc
     '''
-    #auprc
+    #auc
     AUC = metrics.roc_auc_score(y_true=yTest, y_score=y_score, multi_class="ovr", average="macro")
     #----------------------------------------------------------------------------------------
+    #auprc
     #precision = dict()
     #recall = dict()
     auprc_scores = []
