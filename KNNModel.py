@@ -1,6 +1,7 @@
 import pandas as pd 
 import numpy as np 
 import shap
+from sklearn import metrics
 from templatesplit import Splitter
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -56,19 +57,35 @@ def predict_KNN(model, xTest, yTest):
     """
     yHat = model.predict(xTest.to_numpy())
     yTest = yTest.to_numpy().flatten()
-    predProbTest= model.predict_proba(xTest)[:,1]
-    
-    AUC = roc_auc_score(yTest, predProbTest)
+    y_score= model.predict_proba(xTest)
+    #auprc
+    AUC = metrics.roc_auc_score(y_true=yTest, y_score=y_score, multi_class="ovr", average="macro")
+    #auc
+    #TODO: figure out where "classes" comes from
+    classes = [0, 1, 2]
+    auprc_scores = []
+    for i, label in enumerate(classes):
+            # Treat each class as binary (1 if class i, 0 otherwise)
+            y_binary = (yTest == label).astype(int)
+            precision, recall, _ = metrics.precision_recall_curve(y_binary, y_score[:, i])
+            auprc = metrics.auc(recall, precision)
+            auprc_scores.append(auprc)
+    AUPRC = np.mean(auprc_scores)
+    #-----------------------------------------------------------------------------------------
+    #f1
+    F1 = metrics.f1_score(yTest, model.predict(xTest), average= "macro")
+    """ AUC = roc_auc_score(yTest, predProbTest)
 
     testPrecision, testRecall, testThreshold = precision_recall_curve(yTest, predProbTest)
     AUPRC = auc(testRecall, testPrecision)
 
     F1 = f1_score(y_pred=yHat, y_true=yTest)
-
-    #fpr, tpr, thresholds = roc_curve(y_true=yTest, y_score=predProbTest)
+    """
+    #fpr, tpr, thresholds = roc_curve(y_true=yTest, y_score=y_score)
+    
     acc = accuracy_score(y_true=yTest, y_pred=yHat)
     
-    return yHat, {"Accuracy" : acc, "AUC": AUC, "AUPRC": AUPRC, "F1": F1}#, {"fpr": fpr, "tpr": tpr}
+    return yHat, {"Accuracy" : acc, "AUC": AUC, "AUPRC": AUPRC, "F1": F1}
 
 
 def eval_gridsearch(xTrain, yTrain):

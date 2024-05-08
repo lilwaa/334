@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_recall_curve, auc, roc_curve
+import time
 
 def train_NN(params, xTrain, yTrain):
     """
@@ -26,7 +27,8 @@ def train_NN(params, xTrain, yTrain):
         model : object
             Keys represent the epochs and values the number of mistakes
     """
-    model = MLPClassifier(alpha=params["alpha"], solver=params["solver"], hidden_layer_sizes=(23,23))
+    hdls = int(xTrain.shape[1]*2/3) + 1
+    model = MLPClassifier(alpha=params["alpha"], solver=params["solver"], hidden_layer_sizes=(hdls,hdls))
     model = model.fit(X=xTrain.to_numpy(), y=yTrain.to_numpy().flatten())
     return model
 def predict_NN(model, xTest, yTest):
@@ -122,19 +124,17 @@ def eval_gridsearch(xTrain, yTrain):
     yTrain = yTrain.to_numpy().flatten()
     clf.fit(X=xTrain, y=yTrain)
     gscv = GridSearchCV(estimator=clf, cv=5, param_grid=pgrid, scoring='f1_macro')
-
-    
     gscv = gscv.fit(X=xTrain, y=yTrain)
     return gscv.best_params_
 
 def plotting(xTrain, model, xTest):
     xt = shap.sample(xTrain, 300)
     explainer = shap.KernelExplainer(model.predict,xt)
-    shap_values = explainer.shap_values(xTest,nsamples=150)
+    shap_values = explainer.shap_values(xTest,nsamples=500)
     shap.summary_plot(shap_values,xTest,feature_names=xTest.columns)
 
 def main():
-    splitter = Splitter() #Note: you need to go to the templatesplit.py to change the target column if needed
+    splitter = Splitter() 
     xtrain, xtest, ytrain, ytest = splitter.get_all_subsets()
 
     occGen = ['Occupation_Business_F', 'Occupation_Corporate_F', 'Occupation_Housewife_F',
@@ -143,7 +143,7 @@ def main():
     
     predictions = [0] * len(occGen)
     metricsDict = [0]*  len(occGen)
-    
+    totaltime = [0] * len(occGen)
     models = [0]*  len(occGen)
 
     for i in range( len(occGen)): 
@@ -151,9 +151,8 @@ def main():
         print(name)
         xTrain = xtrain[name]
         yTrain = ytrain[name]
-
         bp = eval_gridsearch(xTrain, yTrain)
-
+        start = time.time()
         model = train_NN(bp, xTrain, yTrain)
         models[i] = model
 
@@ -162,10 +161,12 @@ def main():
 
         print(type(xTrain))
         predictions[i], metricsDict[i] = predict_NN(model, xTest, yTest)
+        timeElapsed = time.time() - start
+        totaltime[i] = timeElapsed
         print (metricsDict[i])
+        print("TOTAL TIME ELAPSED: " + str(timeElapsed))
         print(model.get_params)
-        #if i == 0:
-            #plotting(model=models[1], xTest=xTest,xTrain=xTrain)
+        #plotting(model=models[i], xTest=xTest,xTrain=xTrain)
         
 if __name__ == "__main__":
     main()
