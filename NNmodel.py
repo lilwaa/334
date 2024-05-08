@@ -1,12 +1,14 @@
 import pandas as pd 
 import numpy as np 
 import shap
+from sklearn import metrics
 from templatesplit import Splitter
 import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_recall_curve, auc, roc_curve
-from sklearn.neighbors import KNeighborsClassifier
+import time
+
 def train_NN(params, xTrain, yTrain):
     """
         Train the NN using the data.
@@ -25,8 +27,9 @@ def train_NN(params, xTrain, yTrain):
         model : object
             Keys represent the epochs and values the number of mistakes
     """
-    model = MLPClassifier(alpha=params["alpha"], solver=params["solver"])
-    model = model.fit(X=xTrain, y=yTrain)
+    hdls = int(xTrain.shape[1]*2/3) + 1
+    model = MLPClassifier(alpha=params["alpha"], solver=params["solver"], hidden_layer_sizes=(hdls,hdls))
+    model = model.fit(X=xTrain.to_numpy(), y=yTrain.to_numpy().flatten())
     return model
 def predict_NN(model, xTest, yTest):
     """
@@ -55,20 +58,38 @@ def predict_NN(model, xTest, yTest):
             with different thresholds. You should be able to use this
             to plot the ROC for the model performance on the test curve.
     """
-    yHat = model.predict(xTest)
-    predProbTest= model.predict_proba(xTest)[:,1]
+    yHat = model.predict(xTest.to_numpy())
+    yTest = yTest.to_numpy().flatten()
     
-    AUC = roc_auc_score(yTest, predProbTest)
+    y_score= model.predict_proba(xTest)
+    #auprc
+    AUC = metrics.roc_auc_score(y_true=yTest, y_score=y_score, multi_class="ovr", average="macro")
+    #auc
+    #TODO: figure out where "classes" comes from
+    classes = [0, 1, 2]
+    auprc_scores = []
+    for i, label in enumerate(classes):
+            # Treat each class as binary (1 if class i, 0 otherwise)
+            y_binary = (yTest == label).astype(int)
+            precision, recall, _ = metrics.precision_recall_curve(y_binary, y_score[:, i])
+            auprc = metrics.auc(recall, precision)
+            auprc_scores.append(auprc)
+    AUPRC = np.mean(auprc_scores)
+    #-----------------------------------------------------------------------------------------
+    #f1
+    F1 = metrics.f1_score(yTest, model.predict(xTest), average= "macro")
+    """ AUC = roc_auc_score(yTest, predProbTest)
 
     testPrecision, testRecall, testThreshold = precision_recall_curve(yTest, predProbTest)
     AUPRC = auc(testRecall, testPrecision)
 
     F1 = f1_score(y_pred=yHat, y_true=yTest)
-
-    fpr, tpr, thresholds = roc_curve(y_true=yTest, y_score=predProbTest)
+    """
+    #fpr, tpr, thresholds = roc_curve(y_true=yTest, y_score=y_score)
+    
     acc = accuracy_score(y_true=yTest, y_pred=yHat)
     
-    return yHat, {"Accuracy" : acc, "AUC": AUC, "AUPRC": AUPRC, "F1": F1}, {"fpr": fpr, "tpr": tpr}
+    return yHat, {"Accuracy" : acc, "AUC": AUC, "AUPRC": AUPRC, "F1": F1}
 
 
 def eval_gridsearch(xTrain, yTrain):
@@ -99,13 +120,21 @@ def eval_gridsearch(xTrain, yTrain):
     """
     pgrid = {"solver": ['lbfgs', 'adam'], "alpha": [0.00001, 0.0001]}
     clf = MLPClassifier()
+    xTrain = xTrain.to_numpy()
+    yTrain = yTrain.to_numpy().flatten()
     clf.fit(X=xTrain, y=yTrain)
-    gscv = GridSearchCV(estimator=clf, param_grid=pgrid)
+    gscv = GridSearchCV(estimator=clf, cv=5, param_grid=pgrid, scoring='f1_macro')
     gscv = gscv.fit(X=xTrain, y=yTrain)
     return gscv.best_params_
 
+def plotting(xTrain, model, xTest):
+    xt = shap.sample(xTrain, 300)
+    explainer = shap.KernelExplainer(model.predict,xt)
+    shap_values = explainer.shap_values(xTest,nsamples=500)
+    shap.summary_plot(shap_values,xTest,feature_names=xTest.columns)
+
 def main():
-    splitter = Splitter() #Note: you need to go to the templatesplit.py to change the target column if needed
+    splitter = Splitter() 
     xtrain, xtest, ytrain, ytest = splitter.get_all_subsets()
 
     occGen = ['Occupation_Business_F', 'Occupation_Corporate_F', 'Occupation_Housewife_F',
@@ -114,7 +143,7 @@ def main():
     
     predictions = [0] * len(occGen)
     metricsDict = [0]*  len(occGen)
-    roc = [0]*  len(occGen)
+    totaltime = [0] * len(occGen)
     models = [0]*  len(occGen)
 
     for i in range( len(occGen)): 
@@ -122,25 +151,23 @@ def main():
         print(name)
         xTrain = xtrain[name]
         yTrain = ytrain[name]
-
         bp = eval_gridsearch(xTrain, yTrain)
-
-        model = MLPClassifier()
+        start = time.time()
         model = train_NN(bp, xTrain, yTrain)
         models[i] = model
-    
+
         xTest = xtest[name]
         yTest = ytest[name]
 
-        predictions[i], metricsDict[i], roc[i] = predict_NN(model, xTest, yTest)
+        print(type(xTrain))
+        predictions[i], metricsDict[i] = predict_NN(model, xTest, yTest)
+        timeElapsed = time.time() - start
+        totaltime[i] = timeElapsed
         print (metricsDict[i])
-
-        m2 = KNeighborsClassifier()
-        m2 = m2.fit(xTrain, yTrain)
-        pred = m2.predict(xTest)
-        print("KNN")
-        print(accuracy_score(y_true=yTest, y_pred=pred))
-
-
+        print("TOTAL TIME ELAPSED: " + str(timeElapsed))
+        print(model.get_params)
+        #plotting(model=models[i], xTest=xTest,xTrain=xTrain)
+        
 if __name__ == "__main__":
     main()
+
